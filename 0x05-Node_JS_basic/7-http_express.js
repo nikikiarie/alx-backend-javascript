@@ -4,41 +4,46 @@ const fs = require('fs');
 const server = express();
 const serverPort = 1245;
 
-function countStudents(filePath) {
+function listStudents(dataFile) {
   const studentGroups = {};
   const studentCounts = {};
   let totalStudents = 0;
 
   return new Promise((resolve, reject) => {
-    fs.readFile(filePath, (error, data) => {
+    fs.readFile(dataFile, (error, data) => {
       if (error) {
         reject(error);
       } else {
-        let result = '';
+        let resultText = '';
         const dataLines = data.toString().split('\n');
-        for (let i = 0; i < dataLines.length; i += 1) {
-          if (dataLines[i]) {
+        for (let j = 1; j < dataLines.length; j += 1) {
+          if (dataLines[j]) {
             totalStudents += 1;
-            const studentData = dataLines[i].toString().split(',');
-            if (Object.prototype.hasOwnProperty.call(studentGroups, studentData[3])) {
-              studentGroups[studentData[3]].push(studentData[0]);
+            const studentData = dataLines[j].toString().split(',');
+            const group = studentData[3];
+            const name = studentData[0];
+
+            if (Object.prototype.hasOwnProperty.call(studentGroups, group)) {
+              studentGroups[group].push(name);
             } else {
-              studentGroups[studentData[3]] = [studentData[0]];
+              studentGroups[group] = [name];
             }
-            if (Object.prototype.hasOwnProperty.call(studentCounts, studentData[3])) {
-              studentCounts[studentData[3]] += 1;
+
+            if (Object.prototype.hasOwnProperty.call(studentCounts, group)) {
+              studentCounts[group] += 1;
             } else {
-              studentCounts[studentData[3]] = 1;
+              studentCounts[group] = 1;
             }
           }
         }
-        const studentCount = totalStudents - 1;
-        result += `Number of students: ${studentCount}\n`;
+
+        const studentCount = totalStudents;
+        resultText += `Number of students: ${studentCount}\n`;
         for (const [group, count] of Object.entries(studentCounts)) {
-          result += `Number of students in ${group}: ${count}. `;
-          result += `List: ${studentGroups[group].join(', ')}\n`;
+          resultText += `Number of students in ${group}: ${count}. `;
+          resultText += `List: ${studentGroups[group].join(', ')}\n`;
         }
-        resolve(result);
+        resolve(resultText);
       }
     });
   });
@@ -49,7 +54,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/students', (req, res) => {
-  countStudents(process.argv[2].toString()).then((studentReport) => {
+  listStudents(process.argv[2].toString()).then((studentReport) => {
     res.send(['This is the list of our students', studentReport].join('\n'));
   }).catch(() => {
     res.send('This is the list of our students\nCannot load the database');
